@@ -79,7 +79,7 @@
    useEffect(() => {
      render(svgRef);
      // setType({ selectedOption: 'chart' , totals: totals});
-   }, [props, form, setType]);
+   }, [props, form, setType, orderDesc]);
  
    const groupData = (data: any, total: any) => {
      let cumulative = 0
@@ -169,7 +169,7 @@
      }
      const resultset = creatUniqueArray();
      const counts = resultset.filter((d: any)=> d.metricpossiblevalues < 5 ).length;
-     const arrayOfPoints: any = [];
+     const middleIndex = resultset.indexOf(resultset[Math.round((resultset.length - 1) / 2)]);
      const total = d3.sum(resultset, (d: any) => d.metricpossiblevalues);
      totals = total;
      orderDesc ? resultset.sort((a: any, b: any) => a.orderby - b.orderby) : resultset.sort((a: any, b: any) => b.orderby - a.orderby) ;
@@ -178,15 +178,12 @@
       //getX
     const getX = (d: any, index: any)=> {
       const polyLineWidth = 20;
-      let pointThirdX  = 0;
       const valIndex = (index == 0 || counts < 2) ? 0.9: 0.9;
-      if( index < 2  ) {
-        pointThirdX =  (xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!)) + (polyLineWidth * (valIndex + 1));
+      if( index < middleIndex  ) {
+        return (xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!)) + (polyLineWidth * (valIndex + 6));
       } else {
-        pointThirdX =  (xScale(d.cumulative)! - (xScale(d.metricpossiblevalues)!)) - (polyLineWidth * (valIndex + 1));
+        return  (xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!)) - (polyLineWidth * (valIndex + 10));
       }
-
-      return `${pointThirdX + (pointThirdX * (valIndex + 1))}`
     }
 
     // getY
@@ -194,10 +191,10 @@
       const polyLineHeight = 20;
       const pointFirstY = (h / 2) - (halfBarHeight * lineHeight); 
         let pointThirdY  = 0;
-        if( index < 3  ) {
-          pointThirdY = pointFirstY - (polyLineHeight * (index + 1));
+        if( index < middleIndex  ) {
+          pointThirdY = pointFirstY - (polyLineHeight * (index + 0.7));
         } else {
-          pointThirdY = pointFirstY - (polyLineHeight * (index + 1));
+          pointThirdY = pointFirstY - (polyLineHeight * (index * 1.2));
         }
         return `${pointThirdY}`
     }
@@ -206,13 +203,13 @@
     const getPoints = (d: any, index: any) => {
       const polyLineHeight = 20;
       const polyLineWidth = 20;
-      const pointFirstX = (xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!) / 2);
-      const pointFirstY = (h / 2) - (halfBarHeight * lineHeight); 
+      const pointFirstX = (xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!) / 2) - 12;
+      const pointFirstY = (h / 2) - (halfBarHeight * lineHeight) + 5; 
       let pointSecondX = 0;
       let pointSecondY = 0;
       let pointThirdX  = 0;
       let pointThirdY  = 0;
-      if( index < 3  ) {
+      if( index < middleIndex  ) {
         pointSecondX = pointFirstX;
         pointSecondY = pointFirstY - (polyLineHeight * (index + 1));
         pointThirdX =  pointFirstX + (polyLineWidth * (index + 1));
@@ -223,7 +220,11 @@
         pointThirdX =  pointFirstX - (polyLineWidth * (index + 1));
         pointThirdY = pointFirstY - (polyLineHeight * (index + 1));
       }
-      arrayOfPoints.push({index: index, x: pointThirdX, y: pointThirdY});
+      /* pointSecondX = pointFirstX;
+      pointSecondY = pointFirstY - (polyLineHeight * (index + 1));
+      pointThirdX =  pointFirstX - (polyLineWidth * (index + 1));
+      pointThirdY = pointFirstY - (polyLineHeight * (index + 1)); */
+      // arrayOfPoints.push({index: index, x: pointThirdX, y: pointThirdY});
       return `${pointFirstX} ${pointFirstY} ${pointSecondX} ${pointSecondY} ${pointThirdX} ${pointThirdY}`;
     }
 
@@ -263,7 +264,7 @@
        .data(_data)
        .enter().append('rect')
        .attr('class', 'rect-stacked')
-       .attr('x', (d: any) => xScale(d.cumulative)!)
+       .attr('x', (d: any) =>( xScale(d.cumulative)! - 12))
        .attr('y', h / 2 - halfBarHeight)
        .attr('height', barHeight)
        .attr('width', (d: any) => xScale(d.metricpossiblevalues)!)
@@ -298,7 +299,8 @@
        .attr('y',(d: any, index: any) => f(d.percent) < 5 ? getY(d, index) : ((h / 2) - (halfBarHeight / 2)))
       //  .attr('x', (d: any, index: any) =>f(d.percent) < 5 ? getX(d, index) : xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!) / 2)
       //  .attr('y',(d: any, index: any) => f(d.percent) < 5 ? getY(d, index) : ((h / 2) - (halfBarHeight / 2)))
-       .text((d: any) =>  f(d.percent) < 5 ? f(d.percent) + '%, ' + ' ' +  d.metricpossible : f(d.percent) + '%')
+       .text((d: any) =>  f(d.percent) < 5 ? f(d.percent) + '%, ' + ' ' +  d.metricpossible : f(d.percent) + '%');
+      //  .text((d: any) =>  f(d.percent) + '%');
  
      // add the labels bellow bar
      d3.selectAll('.text-label').remove();
