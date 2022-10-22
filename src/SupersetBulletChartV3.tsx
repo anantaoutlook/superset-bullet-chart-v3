@@ -109,13 +109,15 @@
      const h = height - margin.top - margin.bottom
      const halfBarHeight = barHeight;
      const lineHeight = 1.1;
-     const lineWidth = 20;
 
       //
       const getMetricPossible = (data: any)=> {
+        const rectangles: any = selection.selectAll('rect') || null;
         data.each(function(this:any){
-        const text = d3.select(this);
-        wrap(this, text.node().getComputedTextLength());
+        const filterVal = rectangles[0].filter((d: any, eleIndex: number)=> data[0].indexOf(this) === eleIndex);
+        if(filterVal.length > 0) {
+          wrap(this, parseFloat(filterVal[0].attributes[4].value) + 5);
+        }
       });
     }
 
@@ -168,38 +170,13 @@
        return distinct;
      }
      const resultset = creatUniqueArray();
-     const counts = resultset.filter((d: any)=> d.metricpossiblevalues < 5 ).length;
-     const middleIndex = resultset.indexOf(resultset[Math.round((resultset.length - 1) / 2)]);
      const total = d3.sum(resultset, (d: any) => d.metricpossiblevalues);
      totals = total;
      orderDesc ? resultset.sort((a: any, b: any) => a.orderby - b.orderby) : resultset.sort((a: any, b: any) => b.orderby - a.orderby) ;
+     const middleIndex = resultset.indexOf(resultset[Math.round((resultset.length - 1) / 2)]);
      const _data = groupData(resultset, total);
 
-      //getX
-    const getX = (d: any, index: any)=> {
-      const polyLineWidth = 20;
-      const valIndex = (index == 0 || counts < 2) ? 0.9: 0.9;
-      if( index < middleIndex  ) {
-        return (xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!)) + (polyLineWidth * (valIndex + 6));
-      } else {
-        return  (xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!)) - (polyLineWidth * (valIndex + 10));
-      }
-    }
-
-    // getY
-    const getY = (d: any, index: any)=> {
-      const polyLineHeight = 20;
-      const pointFirstY = (h / 2) - (halfBarHeight * lineHeight); 
-        let pointThirdY  = 0;
-        if( index < middleIndex  ) {
-          pointThirdY = pointFirstY - (polyLineHeight * (index + 0.7));
-        } else {
-          pointThirdY = pointFirstY - (polyLineHeight * (index * 1.2));
-        }
-        return `${pointThirdY}`
-    }
-
-    //getPoints 
+    //getPoints to draw ppolylines
     const getPoints = (d: any, index: any) => {
       const polyLineHeight = 20;
       const polyLineWidth = 20;
@@ -220,14 +197,23 @@
         pointThirdX =  pointFirstX - (polyLineWidth * (index + 1));
         pointThirdY = pointFirstY - (polyLineHeight * (index + 1));
       }
-      /* pointSecondX = pointFirstX;
-      pointSecondY = pointFirstY - (polyLineHeight * (index + 1));
-      pointThirdX =  pointFirstX - (polyLineWidth * (index + 1));
-      pointThirdY = pointFirstY - (polyLineHeight * (index + 1)); */
-      // arrayOfPoints.push({index: index, x: pointThirdX, y: pointThirdY});
       return `${pointFirstX} ${pointFirstY} ${pointSecondX} ${pointSecondY} ${pointThirdX} ${pointThirdY}`;
     }
 
+
+    const getPolylineEndX = (d: any, index: any) => {
+      const polylines: any = selection.selectAll('polyline') || null;
+      const filterVal = polylines.filter((d: any, eleIndex: number)=> index === eleIndex);
+      const pointArr = filterVal[0][0].attributes[1].value.split(' ');
+      const xCordinate = index < middleIndex ? pointArr[pointArr.length - 2] + 2 : pointArr[pointArr.length - 2] - 2; 
+      return  xCordinate;
+    }
+
+    const getPolylineEndY = (d: any, index: any) => {
+      const polyLineHeight = 20;
+      const pointFirstY = (h / 2) - (halfBarHeight * lineHeight) + 5; 
+      return pointFirstY - (polyLineHeight * (index + 1));
+    }
    
  
      // indicator position
@@ -271,13 +257,13 @@
        .style('fill', (d, i) => customColors[i + 4])
        .text((d: any) =>  f(d.percent) < 5 ? f(d.percent) + '%, ' + ' ' +  d.metricpossible : f(d.percent) + '%');
  
-     // add values on top of bar(indicator)
+     // add image on top of bar(indicator)
      d3.selectAll('.text-value').remove();
      selection.selectAll('.text-value')
        .data(_data)
        .enter().append('text')
        .attr('class', 'text-value')
-       .attr('text-anchor', 'middle')
+       .attr('text-anchor', 'start')
        .attr('font-size', '14px')
        .style('fill', (d, i) => customColors[customColors.length - 3])
        .attr('x', (d: any) => xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!) / 2)
@@ -294,13 +280,9 @@
        .attr('class', 'text-percent')
        .attr('text-anchor', 'middle')
        .attr('font-size', '11px')
-       // .attr('width', '100px')
-       .attr('x', (d: any, index: any) =>f(d.percent) < 5 ? getX(d, index) : xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!) / 2)
-       .attr('y',(d: any, index: any) => f(d.percent) < 5 ? getY(d, index) : ((h / 2) - (halfBarHeight / 2)))
-      //  .attr('x', (d: any, index: any) =>f(d.percent) < 5 ? getX(d, index) : xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!) / 2)
-      //  .attr('y',(d: any, index: any) => f(d.percent) < 5 ? getY(d, index) : ((h / 2) - (halfBarHeight / 2)))
-       .text((d: any) =>  f(d.percent) < 5 ? f(d.percent) + '%, ' + ' ' +  d.metricpossible : f(d.percent) + '%');
-      //  .text((d: any) =>  f(d.percent) + '%');
+       .attr('x', (d: any) => xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!) / 2)
+       .attr('y', ((h / 2) - (halfBarHeight / 2)))
+       .text((d: any) => f(d.percent) > 5 ? f(d.percent) + '%': '');
  
      // add the labels bellow bar
      d3.selectAll('.text-label').remove();
@@ -308,9 +290,10 @@
        .data(_data)
        .enter().append('text')
        .attr('class', 'text-label')
+      //  .attr('text-anchor', (d:any)=> f(d.percent) < 5 ? 'end' :'middle')
        .attr('text-anchor', 'middle')
        .attr('font-size', '9px')
-       .attr('x', (d: any) => xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!) / 2)
+       .attr('x', (d: any) => (xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!) / 2) - 12)
        .attr('y', (h / 2) + 15)
        .style('fill', '#000')
        .attr('width', (d: any) => ((xScale(d.metricpossiblevalues)!) / 3))
@@ -318,19 +301,7 @@
        .call(getMetricPossible);
        // .style('fill', (d, i) => customColors[i])
  
-     // draw polylines
-    /*  d3.selectAll('polyline').remove();
-     selection.selectAll('.polyline')
-       .data(_data)
-       .enter()
-       .append('polyline')
-       .style('stroke', 'black')
-       .style('fill', 'none')
-       .attr('stroke-width', 0.5)
-       .attr('points', (d: any, index: any) => f(d.percent) < 5 ? `${(xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!) / 2)} ${(h / 2) - (halfBarHeight * lineHeight)}, 
-                                   ${((xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!) / 2))} ${((h / 2) - (halfBarHeight * lineHeight)) - (lineWidth * index)},
-                                   ${(xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!)) + ((xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!)) / 10)} ${((h / 2) - (halfBarHeight * lineHeight)) - (lineWidth * index)} 
-                                   ` : '') */
+      
       d3.selectAll('polyline').remove();
       selection.selectAll('.polyline')
         .data(_data)
@@ -338,8 +309,20 @@
         .append('polyline')
         .style('stroke', 'black')
         .style('fill', 'none')
-        .attr('stroke-width', 0.5)
+        .attr('stroke-width', 0.6)
         .attr('points', (d: any, index: any) => f(d.percent) < 5 ? getPoints(d, index) : '');
+      
+      // append text at the end of line
+      d3.selectAll('.line-text').remove();
+      selection.selectAll('.line-text')
+        .data(_data)
+        .enter().append('text')
+        .attr('class', 'line-text')
+        .attr('text-anchor', (d:any, index:any)=>  index < middleIndex ? 'start' : 'end')
+        .attr('font-size', '11px')
+        .attr('x', (d: any, index: any) => (getPolylineEndX(d, index)))
+        .attr('y', (d: any, index: any) => (getPolylineEndY(d, index)) + 2)
+        .text((d: any) =>  f(d.percent) < 5 ? f(d.percent) + '%, ' + ' ' +  d.metricpossible : '');
    };
  
    return (
@@ -352,14 +335,14 @@
            checked = { form.selectedOption === 'chart'}
            onClick={(e) => onSiteChanged('', "chart")}
          /> <label htmlFor="chart" style={{verticalAlign: 'middle'}}>chart</label>
-         <input type="radio"
+         {/* <input type="radio"
            style={{ marginLeft: '20px' }}
            id="number"
            value="number"
            name="optionGroup"
            checked = { form.selectedOption === 'number'}
            onClick={(e) => onSiteChanged('', "number")}
-         /> <label htmlFor="number" style={{verticalAlign: 'middle'}}>number</label>
+         /> <label htmlFor="number" style={{verticalAlign: 'middle'}}>number</label> */}
        </div>
        {
          form.selectedOption === "chart" ?

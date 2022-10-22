@@ -139,13 +139,16 @@ export default function SupersetBulletChartV3(props) {
     var w = width - margin.left - margin.right;
     var h = height - margin.top - margin.bottom;
     var halfBarHeight = barHeight;
-    var lineHeight = 1.1;
-    var lineWidth = 20; //
+    var lineHeight = 1.1; //
 
     var getMetricPossible = data => {
+      var rectangles = selection.selectAll('rect') || null;
       data.each(function () {
-        var text = d3.select(this);
-        wrap(this, text.node().getComputedTextLength());
+        var filterVal = rectangles[0].filter((d, eleIndex) => data[0].indexOf(this) === eleIndex);
+
+        if (filterVal.length > 0) {
+          wrap(this, parseFloat(filterVal[0].attributes[4].value) + 5);
+        }
       });
     };
 
@@ -194,40 +197,12 @@ export default function SupersetBulletChartV3(props) {
     }
 
     var resultset = creatUniqueArray();
-    var counts = resultset.filter(d => d.metricpossiblevalues < 5).length;
-    var middleIndex = resultset.indexOf(resultset[Math.round((resultset.length - 1) / 2)]);
     var total = d3.sum(resultset, d => d.metricpossiblevalues);
     totals = total;
     orderDesc ? resultset.sort((a, b) => a.orderby - b.orderby) : resultset.sort((a, b) => b.orderby - a.orderby);
+    var middleIndex = resultset.indexOf(resultset[Math.round((resultset.length - 1) / 2)]);
 
-    var _data = groupData(resultset, total); //getX
-
-
-    var getX = (d, index) => {
-      var polyLineWidth = 20;
-      var valIndex = index == 0 || counts < 2 ? 0.9 : 0.9;
-
-      if (index < middleIndex) {
-        return xScale(d.cumulative) + xScale(d.metricpossiblevalues) + polyLineWidth * (valIndex + 6);
-      } else {
-        return xScale(d.cumulative) + xScale(d.metricpossiblevalues) - polyLineWidth * (valIndex + 10);
-      }
-    }; // getY
-
-
-    var getY = (d, index) => {
-      var polyLineHeight = 20;
-      var pointFirstY = h / 2 - halfBarHeight * lineHeight;
-      var pointThirdY = 0;
-
-      if (index < middleIndex) {
-        pointThirdY = pointFirstY - polyLineHeight * (index + 0.7);
-      } else {
-        pointThirdY = pointFirstY - polyLineHeight * (index * 1.2);
-      }
-
-      return "" + pointThirdY;
-    }; //getPoints 
+    var _data = groupData(resultset, total); //getPoints to draw ppolylines
 
 
     var getPoints = (d, index) => {
@@ -251,14 +226,22 @@ export default function SupersetBulletChartV3(props) {
         pointThirdX = pointFirstX - polyLineWidth * (index + 1);
         pointThirdY = pointFirstY - polyLineHeight * (index + 1);
       }
-      /* pointSecondX = pointFirstX;
-      pointSecondY = pointFirstY - (polyLineHeight * (index + 1));
-      pointThirdX =  pointFirstX - (polyLineWidth * (index + 1));
-      pointThirdY = pointFirstY - (polyLineHeight * (index + 1)); */
-      // arrayOfPoints.push({index: index, x: pointThirdX, y: pointThirdY});
-
 
       return pointFirstX + " " + pointFirstY + " " + pointSecondX + " " + pointSecondY + " " + pointThirdX + " " + pointThirdY;
+    };
+
+    var getPolylineEndX = (d, index) => {
+      var polylines = selection.selectAll('polyline') || null;
+      var filterVal = polylines.filter((d, eleIndex) => index === eleIndex);
+      var pointArr = filterVal[0][0].attributes[1].value.split(' ');
+      var xCordinate = index < middleIndex ? pointArr[pointArr.length - 2] + 2 : pointArr[pointArr.length - 2] - 2;
+      return xCordinate;
+    };
+
+    var getPolylineEndY = (d, index) => {
+      var polyLineHeight = 20;
+      var pointFirstY = h / 2 - halfBarHeight * lineHeight + 5;
+      return pointFirstY - polyLineHeight * (index + 1);
     }; // indicator position
 
 
@@ -283,39 +266,25 @@ export default function SupersetBulletChartV3(props) {
     .attr('width', w).attr('height', height).append('g').attr('transform', 'translate(' + margin.left + ',' + margin.top + ')'); // stack rect for each data value
 
     d3.selectAll('rect').remove();
-    selection.selectAll('rect').data(_data).enter().append('rect').attr('class', 'rect-stacked').attr('x', d => xScale(d.cumulative) - 12).attr('y', h / 2 - halfBarHeight).attr('height', barHeight).attr('width', d => xScale(d.metricpossiblevalues)).style('fill', (d, i) => customColors[i + 4]).text(d => f(d.percent) < 5 ? f(d.percent) + '%, ' + ' ' + d.metricpossible : f(d.percent) + '%'); // add values on top of bar(indicator)
+    selection.selectAll('rect').data(_data).enter().append('rect').attr('class', 'rect-stacked').attr('x', d => xScale(d.cumulative) - 12).attr('y', h / 2 - halfBarHeight).attr('height', barHeight).attr('width', d => xScale(d.metricpossiblevalues)).style('fill', (d, i) => customColors[i + 4]).text(d => f(d.percent) < 5 ? f(d.percent) + '%, ' + ' ' + d.metricpossible : f(d.percent) + '%'); // add image on top of bar(indicator)
 
     d3.selectAll('.text-value').remove();
-    selection.selectAll('.text-value').data(_data).enter().append('text').attr('class', 'text-value').attr('text-anchor', 'middle').attr('font-size', '14px').style('fill', (d, i) => customColors[customColors.length - 3]).attr('x', d => xScale(d.cumulative) + xScale(d.metricpossiblevalues) / 2).attr('y', h / 2 - halfBarHeight * 1.1).text(d => {
+    selection.selectAll('.text-value').data(_data).enter().append('text').attr('class', 'text-value').attr('text-anchor', 'start').attr('font-size', '14px').style('fill', (d, i) => customColors[customColors.length - 3]).attr('x', d => xScale(d.cumulative) + xScale(d.metricpossiblevalues) / 2).attr('y', h / 2 - halfBarHeight * 1.1).text(d => {
       return d.metricpossible == indicatorPosition ? '▼' : '';
     }); // add some labels for percentages
 
     d3.selectAll('.text-percent').remove();
-    selection.selectAll('.text-percent').data(_data).enter().append('text').attr('class', 'text-percent').attr('text-anchor', 'middle').attr('font-size', '11px') // .attr('width', '100px')
-    .attr('x', (d, index) => f(d.percent) < 5 ? getX(d, index) : xScale(d.cumulative) + xScale(d.metricpossiblevalues) / 2).attr('y', (d, index) => f(d.percent) < 5 ? getY(d, index) : h / 2 - halfBarHeight / 2) //  .attr('x', (d: any, index: any) =>f(d.percent) < 5 ? getX(d, index) : xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!) / 2)
-    //  .attr('y',(d: any, index: any) => f(d.percent) < 5 ? getY(d, index) : ((h / 2) - (halfBarHeight / 2)))
-    .text(d => f(d.percent) < 5 ? f(d.percent) + '%, ' + ' ' + d.metricpossible : f(d.percent) + '%'); //  .text((d: any) =>  f(d.percent) + '%');
-    // add the labels bellow bar
+    selection.selectAll('.text-percent').data(_data).enter().append('text').attr('class', 'text-percent').attr('text-anchor', 'middle').attr('font-size', '11px').attr('x', d => xScale(d.cumulative) + xScale(d.metricpossiblevalues) / 2).attr('y', h / 2 - halfBarHeight / 2).text(d => f(d.percent) > 5 ? f(d.percent) + '%' : ''); // add the labels bellow bar
 
     d3.selectAll('.text-label').remove();
-    selection.selectAll('.text-label').data(_data).enter().append('text').attr('class', 'text-label').attr('text-anchor', 'middle').attr('font-size', '9px').attr('x', d => xScale(d.cumulative) + xScale(d.metricpossiblevalues) / 2).attr('y', h / 2 + 15).style('fill', '#000').attr('width', d => xScale(d.metricpossiblevalues) / 3).text(d => f(d.percent) < 5 ? '' : d.metricpossible).call(getMetricPossible); // .style('fill', (d, i) => customColors[i])
-    // draw polylines
-
-    /*  d3.selectAll('polyline').remove();
-     selection.selectAll('.polyline')
-       .data(_data)
-       .enter()
-       .append('polyline')
-       .style('stroke', 'black')
-       .style('fill', 'none')
-       .attr('stroke-width', 0.5)
-       .attr('points', (d: any, index: any) => f(d.percent) < 5 ? `${(xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!) / 2)} ${(h / 2) - (halfBarHeight * lineHeight)}, 
-                                   ${((xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!) / 2))} ${((h / 2) - (halfBarHeight * lineHeight)) - (lineWidth * index)},
-                                   ${(xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!)) + ((xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!)) / 10)} ${((h / 2) - (halfBarHeight * lineHeight)) - (lineWidth * index)} 
-                                   ` : '') */
+    selection.selectAll('.text-label').data(_data).enter().append('text').attr('class', 'text-label') //  .attr('text-anchor', (d:any)=> f(d.percent) < 5 ? 'end' :'middle')
+    .attr('text-anchor', 'middle').attr('font-size', '9px').attr('x', d => xScale(d.cumulative) + xScale(d.metricpossiblevalues) / 2 - 12).attr('y', h / 2 + 15).style('fill', '#000').attr('width', d => xScale(d.metricpossiblevalues) / 3).text(d => f(d.percent) < 5 ? '' : d.metricpossible).call(getMetricPossible); // .style('fill', (d, i) => customColors[i])
 
     d3.selectAll('polyline').remove();
-    selection.selectAll('.polyline').data(_data).enter().append('polyline').style('stroke', 'black').style('fill', 'none').attr('stroke-width', 0.5).attr('points', (d, index) => f(d.percent) < 5 ? getPoints(d, index) : '');
+    selection.selectAll('.polyline').data(_data).enter().append('polyline').style('stroke', 'black').style('fill', 'none').attr('stroke-width', 0.6).attr('points', (d, index) => f(d.percent) < 5 ? getPoints(d, index) : ''); // append text at the end of line
+
+    d3.selectAll('.line-text').remove();
+    selection.selectAll('.line-text').data(_data).enter().append('text').attr('class', 'line-text').attr('text-anchor', (d, index) => index < middleIndex ? 'start' : 'end').attr('font-size', '11px').attr('x', (d, index) => getPolylineEndX(d, index)).attr('y', (d, index) => getPolylineEndY(d, index) + 2).text(d => f(d.percent) < 5 ? f(d.percent) + '%, ' + ' ' + d.metricpossible : '');
   };
 
   return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("input", {
@@ -330,22 +299,7 @@ export default function SupersetBulletChartV3(props) {
     style: {
       verticalAlign: 'middle'
     }
-  }, "chart"), /*#__PURE__*/React.createElement("input", {
-    type: "radio",
-    style: {
-      marginLeft: '20px'
-    },
-    id: "number",
-    value: "number",
-    name: "optionGroup",
-    checked: form.selectedOption === 'number',
-    onClick: e => onSiteChanged('', "number")
-  }), " ", /*#__PURE__*/React.createElement("label", {
-    htmlFor: "number",
-    style: {
-      verticalAlign: 'middle'
-    }
-  }, "number")), form.selectedOption === "chart" ? /*#__PURE__*/React.createElement("svg", {
+  }, "chart")), form.selectedOption === "chart" ? /*#__PURE__*/React.createElement("svg", {
     ref: svgRef
   }) : /*#__PURE__*/React.createElement("div", {
     style: {
