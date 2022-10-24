@@ -269,12 +269,12 @@ export default function SupersetBulletChartV3(props) {
     selection.selectAll('rect').data(_data).enter().append('rect').attr('class', 'rect-stacked').attr('x', d => xScale(d.cumulative) - 12).attr('y', h / 2 - halfBarHeight).attr('height', barHeight).attr('width', d => xScale(d.metricpossiblevalues)).style('fill', (d, i) => customColors[i + 4]).text(d => f(d.percent) < 5 ? f(d.percent) + '%, ' + ' ' + d.metricpossible : f(d.percent) + '%'); // add image on top of bar(indicator)
 
     d3.selectAll('.text-value').remove();
-    selection.selectAll('.text-value').data(_data).enter().append('text').attr('class', 'text-value').attr('text-anchor', 'start').attr('font-size', '14px').style('fill', (d, i) => customColors[customColors.length - 3]).attr('x', d => xScale(d.cumulative) + xScale(d.metricpossiblevalues) / 2).attr('y', h / 2 - halfBarHeight * 1.1).text(d => {
+    selection.selectAll('.text-value').data(_data).enter().append('text').attr('class', 'text-value').attr('text-anchor', 'middle').attr('font-size', '14px').style('fill', (d, i) => customColors[customColors.length - 3]).attr('x', d => xScale(d.cumulative) + xScale(d.metricpossiblevalues) / 2 - 12).attr('y', h / 2 - halfBarHeight * 1.1).text(d => {
       return d.metricpossible == indicatorPosition ? '▼' : '';
     }); // add some labels for percentages
 
     d3.selectAll('.text-percent').remove();
-    selection.selectAll('.text-percent').data(_data).enter().append('text').attr('class', 'text-percent').attr('text-anchor', 'middle').attr('font-size', '11px').attr('x', d => xScale(d.cumulative) + xScale(d.metricpossiblevalues) / 2).attr('y', h / 2 - halfBarHeight / 2).text(d => f(d.percent) > 5 ? f(d.percent) + '%' : ''); // add the labels bellow bar
+    selection.selectAll('.text-percent').data(_data).enter().append('text').attr('class', 'text-percent').attr('text-anchor', 'middle').attr('font-size', '11px').attr('x', d => xScale(d.cumulative) + xScale(d.metricpossiblevalues) / 2 - 12).attr('y', h / 2 - halfBarHeight / 2).text(d => f(d.percent) > 5 ? f(d.percent) + '%' : ''); // add the labels bellow bar
 
     d3.selectAll('.text-label').remove();
     selection.selectAll('.text-label').data(_data).enter().append('text').attr('class', 'text-label') //  .attr('text-anchor', (d:any)=> f(d.percent) < 5 ? 'end' :'middle')
