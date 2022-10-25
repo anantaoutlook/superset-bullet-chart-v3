@@ -173,7 +173,9 @@ export default function SupersetBulletChartV3(props: SupersetBulletChartV3Props)
     const total = d3.sum(resultset, (d: any) => d.metricpossiblevalues);
     totals = total;
     orderDesc ? resultset.sort((a: any, b: any) => a.orderby - b.orderby) : resultset.sort((a: any, b: any) => b.orderby - a.orderby);
-    const middleIndex = resultset.indexOf(resultset[Math.round((resultset.length - 1) / 2)]);
+    // const middleIndex = resultset.indexOf(resultset[Math.round((resultset.length - 1) / 2)]);
+    const middle =  (resultset.length / 2) + (resultset.length % 2 === 0 ? 1 : resultset.length % 2) ;
+    const middleIndex: any = parseInt(middle + '');
     const _data = groupData(resultset, total);
 
     //getPoints to draw ppolylines
@@ -186,7 +188,7 @@ export default function SupersetBulletChartV3(props: SupersetBulletChartV3Props)
       let pointSecondY = 0;
       let pointThirdX = 0;
       let pointThirdY = 0;
-      if (index < middleIndex) {
+      if (pointFirstX < ( w / 2)) {
         pointSecondX = pointFirstX;
         pointSecondY = pointFirstY - (polyLineHeight * (index + 1));
         pointThirdX = pointFirstX + (polyLineWidth * (index + 1));
@@ -200,12 +202,25 @@ export default function SupersetBulletChartV3(props: SupersetBulletChartV3Props)
       return `${pointFirstX} ${pointFirstY} ${pointSecondX} ${pointSecondY} ${pointThirdX} ${pointThirdY}`;
     }
 
+    // get text position
+    //getPoints to draw ppolylines
+    const getTextAlignment = (d: any, index: any) => {
+      const pointFirstX = (xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!) / 2) - 12;
+      let alignPos = '';
+      if (pointFirstX < ( w / 2)) {
+        alignPos = 'start';
+      } else {
+        alignPos = 'end';
+      }
+      return alignPos;
+    }
+
 
     const getPolylineEndX = (d: any, index: any) => {
       const polylines: any = selection.selectAll('polyline') || null;
       const filterVal = polylines.filter((d: any, eleIndex: number) => index === eleIndex);
       const pointArr = filterVal[0][0].attributes[1].value.split(' ');
-      const xCordinate = index < middleIndex ? pointArr[pointArr.length - 2] + 2 : pointArr[pointArr.length - 2] - 2;
+      const xCordinate = index < middleIndex ? pointArr[pointArr.length - 2] + 5 : pointArr[pointArr.length - 2] - 5;
       return xCordinate;
     }
 
@@ -281,7 +296,7 @@ export default function SupersetBulletChartV3(props: SupersetBulletChartV3Props)
       .attr('text-anchor', 'middle')
       .attr('font-size', '11px')
       .attr('x', (d: any) => (xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!) / 2) - 12)
-      .attr('y', ((h / 2) - (halfBarHeight / 2)))
+      .attr('y', ((h / 2) - (halfBarHeight / 2.5) ))
       .text((d: any) => f(d.percent) > 5 ? f(d.percent) + '%' : '');
 
     // add the labels bellow bar
@@ -311,6 +326,7 @@ export default function SupersetBulletChartV3(props: SupersetBulletChartV3Props)
       .style('fill', 'none')
       .attr('stroke-width', 0.6)
       .attr('points', (d: any, index: any) => f(d.percent) < 5 ? getPoints(d, index) : '');
+      // .attr('points', (d: any, index: any) =>  getPoints(d, index));
 
     // append text at the end of line
     d3.selectAll('.line-text').remove();
@@ -318,7 +334,8 @@ export default function SupersetBulletChartV3(props: SupersetBulletChartV3Props)
       .data(_data)
       .enter().append('text')
       .attr('class', 'line-text')
-      .attr('text-anchor', (d: any, index: any) => index < middleIndex ? 'start' : 'end')
+      // .attr('text-anchor', (d: any, index: any) => index < middleIndex ? 'start' : 'midddle')
+      .attr('text-anchor',(d: any, index: any) => getTextAlignment(d, index))
       .attr('font-size', '11px')
       .attr('x', (d: any, index: any) => (getPolylineEndX(d, index)))
       .attr('y', (d: any, index: any) => (getPolylineEndY(d, index)) + 2)

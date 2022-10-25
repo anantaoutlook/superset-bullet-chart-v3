@@ -199,8 +199,10 @@ export default function SupersetBulletChartV3(props) {
     var resultset = creatUniqueArray();
     var total = d3.sum(resultset, d => d.metricpossiblevalues);
     totals = total;
-    orderDesc ? resultset.sort((a, b) => a.orderby - b.orderby) : resultset.sort((a, b) => b.orderby - a.orderby);
-    var middleIndex = resultset.indexOf(resultset[Math.round((resultset.length - 1) / 2)]);
+    orderDesc ? resultset.sort((a, b) => a.orderby - b.orderby) : resultset.sort((a, b) => b.orderby - a.orderby); // const middleIndex = resultset.indexOf(resultset[Math.round((resultset.length - 1) / 2)]);
+
+    var middle = resultset.length / 2 + (resultset.length % 2 === 0 ? 1 : resultset.length % 2);
+    var middleIndex = parseInt(middle + '');
 
     var _data = groupData(resultset, total); //getPoints to draw ppolylines
 
@@ -215,7 +217,7 @@ export default function SupersetBulletChartV3(props) {
       var pointThirdX = 0;
       var pointThirdY = 0;
 
-      if (index < middleIndex) {
+      if (pointFirstX < w / 2) {
         pointSecondX = pointFirstX;
         pointSecondY = pointFirstY - polyLineHeight * (index + 1);
         pointThirdX = pointFirstX + polyLineWidth * (index + 1);
@@ -228,13 +230,28 @@ export default function SupersetBulletChartV3(props) {
       }
 
       return pointFirstX + " " + pointFirstY + " " + pointSecondX + " " + pointSecondY + " " + pointThirdX + " " + pointThirdY;
+    }; // get text position
+    //getPoints to draw ppolylines
+
+
+    var getTextAlignment = (d, index) => {
+      var pointFirstX = xScale(d.cumulative) + xScale(d.metricpossiblevalues) / 2 - 12;
+      var alignPos = '';
+
+      if (pointFirstX < w / 2) {
+        alignPos = 'start';
+      } else {
+        alignPos = 'end';
+      }
+
+      return alignPos;
     };
 
     var getPolylineEndX = (d, index) => {
       var polylines = selection.selectAll('polyline') || null;
       var filterVal = polylines.filter((d, eleIndex) => index === eleIndex);
       var pointArr = filterVal[0][0].attributes[1].value.split(' ');
-      var xCordinate = index < middleIndex ? pointArr[pointArr.length - 2] + 2 : pointArr[pointArr.length - 2] - 2;
+      var xCordinate = index < middleIndex ? pointArr[pointArr.length - 2] + 5 : pointArr[pointArr.length - 2] - 5;
       return xCordinate;
     };
 
@@ -274,17 +291,19 @@ export default function SupersetBulletChartV3(props) {
     }); // add some labels for percentages
 
     d3.selectAll('.text-percent').remove();
-    selection.selectAll('.text-percent').data(_data).enter().append('text').attr('class', 'text-percent').attr('text-anchor', 'middle').attr('font-size', '11px').attr('x', d => xScale(d.cumulative) + xScale(d.metricpossiblevalues) / 2 - 12).attr('y', h / 2 - halfBarHeight / 2).text(d => f(d.percent) > 5 ? f(d.percent) + '%' : ''); // add the labels bellow bar
+    selection.selectAll('.text-percent').data(_data).enter().append('text').attr('class', 'text-percent').attr('text-anchor', 'middle').attr('font-size', '11px').attr('x', d => xScale(d.cumulative) + xScale(d.metricpossiblevalues) / 2 - 12).attr('y', h / 2 - halfBarHeight / 2.5).text(d => f(d.percent) > 5 ? f(d.percent) + '%' : ''); // add the labels bellow bar
 
     d3.selectAll('.text-label').remove();
     selection.selectAll('.text-label').data(_data).enter().append('text').attr('class', 'text-label') //  .attr('text-anchor', (d:any)=> f(d.percent) < 5 ? 'end' :'middle')
     .attr('text-anchor', 'middle').attr('font-size', '9px').attr('x', d => xScale(d.cumulative) + xScale(d.metricpossiblevalues) / 2 - 12).attr('y', h / 2 + 15).style('fill', '#000').attr('width', d => xScale(d.metricpossiblevalues) / 3).text(d => f(d.percent) < 5 ? '' : d.metricpossible).call(getMetricPossible); // .style('fill', (d, i) => customColors[i])
 
     d3.selectAll('polyline').remove();
-    selection.selectAll('.polyline').data(_data).enter().append('polyline').style('stroke', 'black').style('fill', 'none').attr('stroke-width', 0.6).attr('points', (d, index) => f(d.percent) < 5 ? getPoints(d, index) : ''); // append text at the end of line
+    selection.selectAll('.polyline').data(_data).enter().append('polyline').style('stroke', 'black').style('fill', 'none').attr('stroke-width', 0.6).attr('points', (d, index) => f(d.percent) < 5 ? getPoints(d, index) : ''); // .attr('points', (d: any, index: any) =>  getPoints(d, index));
+    // append text at the end of line
 
     d3.selectAll('.line-text').remove();
-    selection.selectAll('.line-text').data(_data).enter().append('text').attr('class', 'line-text').attr('text-anchor', (d, index) => index < middleIndex ? 'start' : 'end').attr('font-size', '11px').attr('x', (d, index) => getPolylineEndX(d, index)).attr('y', (d, index) => getPolylineEndY(d, index) + 2).text(d => f(d.percent) < 5 ? f(d.percent) + '%, ' + ' ' + d.metricpossible : '');
+    selection.selectAll('.line-text').data(_data).enter().append('text').attr('class', 'line-text') // .attr('text-anchor', (d: any, index: any) => index < middleIndex ? 'start' : 'midddle')
+    .attr('text-anchor', (d, index) => getTextAlignment(d, index)).attr('font-size', '11px').attr('x', (d, index) => getPolylineEndX(d, index)).attr('y', (d, index) => getPolylineEndY(d, index) + 2).text(d => f(d.percent) < 5 ? f(d.percent) + '%, ' + ' ' + d.metricpossible : '');
   };
 
   return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("input", {
