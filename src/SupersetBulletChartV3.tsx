@@ -30,13 +30,13 @@ const categorialSchemeRegistry = getCategoricalSchemeRegistry();
 // imported from @superset-ui/core. For variables available, please visit
 // https://github.com/apache-superset/superset-ui/blob/master/packages/superset-ui-core/src/style/index.ts
 
-const Styles = styled.div<SupersetBulletChartV3StylesProps>`
-  /*  background-color: ${({ theme }) => theme.colors.secondary.light5};
+/* const Styles = styled.div<SupersetBulletChartV3StylesProps>`
+  background-color: ${({ theme }) => theme.colors.secondary.light5};
    padding: ${({ theme }) => theme.gridUnit * 4}px;
-   border-radius: ${({ theme }) => theme.gridUnit * 2}px; */
+   border-radius: ${({ theme }) => theme.gridUnit * 2}px;
    height: ${({ height }) => height}px;
    width: ${({ width }) => width}px;
- `;
+ `; */
 
 /**
  * ******************* WHAT YOU CAN BUILD HERE *******************
@@ -174,7 +174,7 @@ export default function SupersetBulletChartV3(props: SupersetBulletChartV3Props)
     totals = total;
     orderDesc ? resultset.sort((a: any, b: any) => a.orderby - b.orderby) : resultset.sort((a: any, b: any) => b.orderby - a.orderby);
     // const middleIndex = resultset.indexOf(resultset[Math.round((resultset.length - 1) / 2)]);
-    const middle =  (resultset.length / 2) + (resultset.length % 2 === 0 ? 1 : resultset.length % 2) ;
+    const middle = (resultset.length / 2) + (resultset.length % 2 === 0 ? 1 : resultset.length % 2);
     const middleIndex: any = parseInt(middle + '');
     const _data = groupData(resultset, total);
 
@@ -188,7 +188,7 @@ export default function SupersetBulletChartV3(props: SupersetBulletChartV3Props)
       let pointSecondY = 0;
       let pointThirdX = 0;
       let pointThirdY = 0;
-      if (pointFirstX < ( w / 2)) {
+      if (pointFirstX <= (w / 2)) {
         pointSecondX = pointFirstX;
         pointSecondY = pointFirstY - (polyLineHeight * (index + 1));
         pointThirdX = pointFirstX + (polyLineWidth * (index + 1));
@@ -203,11 +203,11 @@ export default function SupersetBulletChartV3(props: SupersetBulletChartV3Props)
     }
 
     // get text position
-    //getPoints to draw ppolylines
+    //getPoints to draw polylines
     const getTextAlignment = (d: any, index: any) => {
       const pointFirstX = (xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!) / 2) - 12;
       let alignPos = '';
-      if (pointFirstX < ( w / 2)) {
+      if (pointFirstX < (w / 2)) {
         alignPos = 'start';
       } else {
         alignPos = 'end';
@@ -220,7 +220,7 @@ export default function SupersetBulletChartV3(props: SupersetBulletChartV3Props)
       const polylines: any = selection.selectAll('polyline') || null;
       const filterVal = polylines.filter((d: any, eleIndex: number) => index === eleIndex);
       const pointArr = filterVal[0][0].attributes[1].value.split(' ');
-      const xCordinate = index < middleIndex ? pointArr[pointArr.length - 2] + 5 : pointArr[pointArr.length - 2] - 5;
+      const xCordinate = index < middleIndex ? pointArr[pointArr.length - 2] + 7 : pointArr[pointArr.length - 2] - 5;
       return xCordinate;
     }
 
@@ -296,7 +296,7 @@ export default function SupersetBulletChartV3(props: SupersetBulletChartV3Props)
       .attr('text-anchor', 'middle')
       .attr('font-size', '11px')
       .attr('x', (d: any) => (xScale(d.cumulative)! + (xScale(d.metricpossiblevalues)!) / 2) - 12)
-      .attr('y', ((h / 2) - (halfBarHeight / 2.5) ))
+      .attr('y', ((h / 2) - (halfBarHeight / 2.5)))
       .text((d: any) => f(d.percent) > 5 ? f(d.percent) + '%' : '');
 
     // add the labels bellow bar
@@ -326,7 +326,7 @@ export default function SupersetBulletChartV3(props: SupersetBulletChartV3Props)
       .style('fill', 'none')
       .attr('stroke-width', 0.6)
       .attr('points', (d: any, index: any) => f(d.percent) < 5 ? getPoints(d, index) : '');
-      // .attr('points', (d: any, index: any) =>  getPoints(d, index));
+    // .attr('points', (d: any, index: any) =>  getPoints(d, index));
 
     // append text at the end of line
     d3.selectAll('.line-text').remove();
@@ -335,9 +335,9 @@ export default function SupersetBulletChartV3(props: SupersetBulletChartV3Props)
       .enter().append('text')
       .attr('class', 'line-text')
       // .attr('text-anchor', (d: any, index: any) => index < middleIndex ? 'start' : 'midddle')
-      .attr('text-anchor',(d: any, index: any) => getTextAlignment(d, index))
+      .attr('text-anchor', (d: any, index: any) => getTextAlignment(d, index))
       .attr('font-size', '11px')
-      .attr('x', (d: any, index: any) => (getPolylineEndX(d, index)))
+      .attr('x', (d: any, index: any) => isNaN(getPolylineEndX(d, index)) ? '' : (getPolylineEndX(d, index)))
       .attr('y', (d: any, index: any) => (getPolylineEndY(d, index)) + 2)
       .text((d: any) => f(d.percent) < 5 ? f(d.percent) + '%, ' + ' ' + d.metricpossible : '');
   };

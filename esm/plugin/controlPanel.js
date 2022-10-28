@@ -19,7 +19,7 @@ function _extends() { _extends = Object.assign || function (target) { for (var i
  * under the License.
  */
 import setupColors from './colorSchemeRegistry';
-import { t, getCategoricalSchemeRegistry, validateNonEmpty } from '@superset-ui/core';
+import { t, getCategoricalSchemeRegistry } from '@superset-ui/core';
 import { sections, sharedControls } from '@superset-ui/chart-controls';
 setupColors();
 var categoricalSchemeRegistry = getCategoricalSchemeRegistry();
@@ -111,11 +111,7 @@ var config = {
       })
     }], [{
       name: 'metrics',
-      config: _extends({}, sharedControls.metrics, {
-        // it's possible to add validators to controls if
-        // certain selections/types need to be enforced
-        validators: [validateNonEmpty]
-      })
+      config: _extends({}, sharedControls.metrics)
     }], ['adhoc_filters'], [{
       name: 'row_limit',
       config: sharedControls.row_limit

@@ -1,7 +1,3 @@
-var _templateObject;
-
-function _taggedTemplateLiteralLoose(strings, raw) { if (!raw) { raw = strings.slice(0); } strings.raw = raw; return strings; }
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -21,7 +17,7 @@ function _taggedTemplateLiteralLoose(strings, raw) { if (!raw) { raw = strings.s
  * under the License.
  */
 import React, { useEffect, useState, createRef } from 'react';
-import { styled, getCategoricalSchemeRegistry } from '@superset-ui/core';
+import { getCategoricalSchemeRegistry } from '@superset-ui/core';
 import * as d3 from 'd3';
 import * as d3Scale from 'd3-scale';
 var categorialSchemeRegistry = getCategoricalSchemeRegistry(); // The following Styles component is a <div> element, which has been styled using Emotion
@@ -30,32 +26,14 @@ var categorialSchemeRegistry = getCategoricalSchemeRegistry(); // The following 
 // imported from @superset-ui/core. For variables available, please visit
 // https://github.com/apache-superset/superset-ui/blob/master/packages/superset-ui-core/src/style/index.ts
 
-var Styles = styled.div(_templateObject || (_templateObject = _taggedTemplateLiteralLoose(["\n  /*  background-color: ", ";\n   padding: ", "px;\n   border-radius: ", "px; */\n   height: ", "px;\n   width: ", "px;\n "])), _ref => {
-  var {
-    theme
-  } = _ref;
-  return theme.colors.secondary.light5;
-}, _ref2 => {
-  var {
-    theme
-  } = _ref2;
-  return theme.gridUnit * 4;
-}, _ref3 => {
-  var {
-    theme
-  } = _ref3;
-  return theme.gridUnit * 2;
-}, _ref4 => {
-  var {
-    height
-  } = _ref4;
-  return height;
-}, _ref5 => {
-  var {
-    width
-  } = _ref5;
-  return width;
-});
+/* const Styles = styled.div<SupersetBulletChartV3StylesProps>`
+  background-color: ${({ theme }) => theme.colors.secondary.light5};
+   padding: ${({ theme }) => theme.gridUnit * 4}px;
+   border-radius: ${({ theme }) => theme.gridUnit * 2}px;
+   height: ${({ height }) => height}px;
+   width: ${({ width }) => width}px;
+ `; */
+
 /**
  * ******************* WHAT YOU CAN BUILD HERE *******************
  *  In essence, a chart is given a few key ingredients to work with:
@@ -217,7 +195,7 @@ export default function SupersetBulletChartV3(props) {
       var pointThirdX = 0;
       var pointThirdY = 0;
 
-      if (pointFirstX < w / 2) {
+      if (pointFirstX <= w / 2) {
         pointSecondX = pointFirstX;
         pointSecondY = pointFirstY - polyLineHeight * (index + 1);
         pointThirdX = pointFirstX + polyLineWidth * (index + 1);
@@ -231,7 +209,7 @@ export default function SupersetBulletChartV3(props) {
 
       return pointFirstX + " " + pointFirstY + " " + pointSecondX + " " + pointSecondY + " " + pointThirdX + " " + pointThirdY;
     }; // get text position
-    //getPoints to draw ppolylines
+    //getPoints to draw polylines
 
 
     var getTextAlignment = (d, index) => {
@@ -251,7 +229,7 @@ export default function SupersetBulletChartV3(props) {
       var polylines = selection.selectAll('polyline') || null;
       var filterVal = polylines.filter((d, eleIndex) => index === eleIndex);
       var pointArr = filterVal[0][0].attributes[1].value.split(' ');
-      var xCordinate = index < middleIndex ? pointArr[pointArr.length - 2] + 5 : pointArr[pointArr.length - 2] - 5;
+      var xCordinate = index < middleIndex ? pointArr[pointArr.length - 2] + 7 : pointArr[pointArr.length - 2] - 5;
       return xCordinate;
     };
 
@@ -303,7 +281,7 @@ export default function SupersetBulletChartV3(props) {
 
     d3.selectAll('.line-text').remove();
     selection.selectAll('.line-text').data(_data).enter().append('text').attr('class', 'line-text') // .attr('text-anchor', (d: any, index: any) => index < middleIndex ? 'start' : 'midddle')
-    .attr('text-anchor', (d, index) => getTextAlignment(d, index)).attr('font-size', '11px').attr('x', (d, index) => getPolylineEndX(d, index)).attr('y', (d, index) => getPolylineEndY(d, index) + 2).text(d => f(d.percent) < 5 ? f(d.percent) + '%, ' + ' ' + d.metricpossible : '');
+    .attr('text-anchor', (d, index) => getTextAlignment(d, index)).attr('font-size', '11px').attr('x', (d, index) => isNaN(getPolylineEndX(d, index)) ? '' : getPolylineEndX(d, index)).attr('y', (d, index) => getPolylineEndY(d, index) + 2).text(d => f(d.percent) < 5 ? f(d.percent) + '%, ' + ' ' + d.metricpossible : '');
   };
 
   return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("input", {
